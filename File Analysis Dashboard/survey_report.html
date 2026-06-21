@@ -1,0 +1,1142 @@
+
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Survey Analytics Dashboard Pro</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+--sidebar-width: 300px; --primary-color: #4361ee; --primary-light: #4895ef;
+--accent-color: #f72585; --bg-light: #f8f9fa; --bg-dark: #0f172a;
+--card-bg-light: #ffffff; --card-bg-dark: #1e293b;
+--text-light: #334155; --text-dark: #e2e8f0;
+--border-light: #e2e8f0; --border-dark: #334155;
+--gradient-1: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+--gradient-2: linear-gradient(135deg, #f72585 0%, #b5179e 100%);
+--gradient-3: linear-gradient(135deg, #4cc9f0 0%, #4895ef 100%);
+--gradient-4: linear-gradient(135deg, #f9c74f 0%, #f8961e 100%);
+--shadow-sm: 0 1px 3px rgba(0,0,0,0.1); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+--shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1); --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+--radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
+}
+[data-bs-theme="dark"] {
+--bs-body-bg: #0f172a; --bs-body-color: #e2e8f0;
+--bs-border-color: #334155; --bs-secondary-bg: #1e293b; --bs-tertiary-bg: #334155;
+}
+* { box-sizing: border-box; }
+body {
+font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+overflow-x: hidden; background: var(--bg-light); color: var(--text-light);
+transition: background 0.3s, color 0.3s;
+}
+[data-bs-theme="dark"] body { background: var(--bg-dark); color: var(--text-dark); }
+.sidebar {
+width: var(--sidebar-width); background: var(--card-bg-light);
+border-right: 1px solid var(--border-light); position: fixed; height: 100vh;
+overflow-y: auto; z-index: 1040; transition: transform 0.3s ease;
+display: flex; flex-direction: column; padding: 0; box-shadow: var(--shadow-lg);
+}
+[data-bs-theme="dark"] .sidebar { background: var(--card-bg-dark); border-right-color: var(--border-dark); }
+.sidebar-header {
+padding: 1.5rem; border-bottom: 1px solid var(--border-light);
+background: var(--gradient-1); color: white;
+}
+.sidebar-brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.75rem; }
+.sidebar-brand i { font-size: 1.8rem; }
+.sidebar-body { flex: 1; padding: 1rem; overflow-y: auto; }
+.sidebar-footer { padding: 1rem; border-top: 1px solid var(--border-light); background: rgba(0,0,0,0.02); }
+[data-bs-theme="dark"] .sidebar-footer { border-top-color: var(--border-dark); background: rgba(255,255,255,0.02); }
+.nav-pills .nav-link {
+color: var(--text-light); border-radius: var(--radius-md); margin-bottom: 0.5rem;
+padding: 0.875rem 1rem; font-weight: 500; transition: all 0.2s;
+display: flex; align-items: center; gap: 0.75rem; border: 1px solid transparent;
+}
+[data-bs-theme="dark"] .nav-pills .nav-link { color: var(--text-dark); }
+.nav-pills .nav-link:hover { background: rgba(67,97,238,0.1); color: var(--primary-color); border-color: rgba(67,97,238,0.2); }
+.nav-pills .nav-link.active { background: var(--gradient-1); color: white; box-shadow: var(--shadow-md); border-color: transparent; }
+.nav-pills .nav-link i { font-size: 1.1rem; width: 24px; text-align: center; }
+.main-content { margin-left: var(--sidebar-width); flex: 1; padding: 1.5rem; min-height: 100vh; transition: margin-left 0.3s ease; }
+.content-header { margin-bottom: 1.5rem; }
+.content-header h2 { font-weight: 700; font-size: 1.75rem; letter-spacing: -0.5px; margin-bottom: 0.25rem; }
+.content-header p { color: #64748b; font-size: 0.95rem; }
+[data-bs-theme="dark"] .content-header p { color: #94a3b8; }
+.dashboard-card {
+background: var(--card-bg-light); border: 1px solid var(--border-light);
+border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+transition: transform 0.2s, box-shadow 0.2s; overflow: hidden;
+}
+[data-bs-theme="dark"] .dashboard-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+.dashboard-card:hover { box-shadow: var(--shadow-lg); }
+.card-header-custom { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; background: transparent; }
+[data-bs-theme="dark"] .card-header-custom { border-bottom-color: var(--border-dark); }
+.card-body-custom { padding: 1.5rem; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.kpi-card {
+background: var(--card-bg-light); border-radius: var(--radius-lg); padding: 1.5rem;
+border: 1px solid var(--border-light); box-shadow: var(--shadow-sm);
+transition: all 0.3s ease; position: relative; overflow: hidden;
+}
+[data-bs-theme="dark"] .kpi-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+.kpi-card::before {
+content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+background: var(--gradient-1); border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+.kpi-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-xl); }
+.kpi-card .kpi-icon {
+width: 48px; height: 48px; border-radius: var(--radius-md);
+display: flex; align-items: center; justify-content: center;
+font-size: 1.5rem; margin-bottom: 1rem;
+}
+.kpi-card .kpi-icon.blue { background: rgba(67,97,238,0.15); color: var(--primary-color); }
+.kpi-card .kpi-icon.pink { background: rgba(247,37,133,0.15); color: var(--accent-color); }
+.kpi-card .kpi-icon.cyan { background: rgba(76,201,240,0.15); color: #0891b2; }
+.kpi-card .kpi-icon.orange { background: rgba(249,199,79,0.15); color: #d97706; }
+.kpi-card .kpi-icon.purple { background: rgba(139,92,246,0.15); color: #7c3aed; }
+.kpi-card .kpi-icon.green { background: rgba(52,211,153,0.15); color: #059669; }
+.kpi-card .kpi-value {
+font-size: 1.75rem; font-weight: 800; color: var(--text-light);
+line-height: 1.2; margin-bottom: 0.25rem; word-break: break-word;
+}
+[data-bs-theme="dark"] .kpi-card .kpi-value { color: var(--text-dark); }
+.kpi-card .kpi-label {
+font-size: 0.8rem; color: #64748b; text-transform: uppercase;
+letter-spacing: 0.5px; font-weight: 600;
+}
+[data-bs-theme="dark"] .kpi-card .kpi-label { color: #94a3b8; }
+.kpi-card .kpi-field-name { font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem; }
+.drop-zone {
+border: 2px dashed #cbd5e1; border-radius: var(--radius-xl); padding: 3rem 2rem;
+text-align: center; transition: all 0.3s ease; cursor: pointer;
+background: rgba(67,97,238,0.03); position: relative;
+}
+[data-bs-theme="dark"] .drop-zone { border-color: #475569; background: rgba(67,97,238,0.05); }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--primary-color); background: rgba(67,97,238,0.08); transform: scale(1.01); }
+.drop-zone .drop-icon {
+width: 80px; height: 80px; background: var(--gradient-1); border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+margin: 0 auto 1.5rem; box-shadow: var(--shadow-lg);
+}
+.drop-zone .drop-icon i { font-size: 2.5rem; color: white; }
+.data-table-wrapper {
+border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+overflow: hidden; background: var(--card-bg-light);
+}
+[data-bs-theme="dark"] .data-table-wrapper { border-color: var(--border-dark); background: var(--card-bg-dark); }
+.data-table-container { max-height: 500px; overflow: auto; }
+.data-table-container table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table-container thead th {
+position: sticky; top: 0; background: var(--gradient-1); color: white;
+font-weight: 600; font-size: 0.85rem; padding: 0.875rem 1rem;
+white-space: nowrap; z-index: 10; border: none;
+}
+.data-table-container tbody td {
+padding: 0.75rem 1rem; font-size: 0.9rem;
+border-bottom: 1px solid var(--border-light); white-space: nowrap;
+max-width: 300px; overflow: hidden; text-overflow: ellipsis;
+}
+[data-bs-theme="dark"] .data-table-container tbody td { border-bottom-color: var(--border-dark); }
+.data-table-container tbody tr:hover td { background: rgba(67,97,238,0.05); }
+.data-table-container tbody tr:last-child td { border-bottom: none; }
+.form-select, .form-control {
+border-radius: var(--radius-md); border: 1px solid var(--border-light);
+padding: 0.625rem 1rem; font-size: 0.9rem; transition: all 0.2s;
+}
+[data-bs-theme="dark"] .form-select, [data-bs-theme="dark"] .form-control {
+background: var(--card-bg-dark); border-color: var(--border-dark); color: var(--text-dark);
+}
+.form-select:focus, .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+.btn {
+border-radius: var(--radius-md); padding: 0.625rem 1.25rem; font-weight: 500;
+transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+}
+.btn-primary { background: var(--gradient-1); border: none; box-shadow: var(--shadow-md); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); opacity: 0.95; }
+.btn-outline-secondary { border: 1px solid var(--border-light); color: var(--text-light); }
+[data-bs-theme="dark"] .btn-outline-secondary { border-color: var(--border-dark); color: var(--text-dark); }
+.field-selector {
+display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 200px;
+overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border-light);
+border-radius: var(--radius-md); background: var(--card-bg-light);
+}
+[data-bs-theme="dark"] .field-selector { border-color: var(--border-dark); background: var(--card-bg-dark); }
+.field-chip {
+display: inline-flex; align-items: center; gap: 0.5rem;
+padding: 0.5rem 1rem; border-radius: 100px; font-size: 0.85rem;
+font-weight: 500; cursor: pointer; transition: all 0.2s;
+border: 2px solid transparent; user-select: none;
+}
+.field-chip:hover { transform: translateY(-1px); }
+.field-chip.selected { background: var(--gradient-1); color: white; box-shadow: var(--shadow-md); }
+.field-chip:not(.selected) { background: rgba(67,97,238,0.08); color: var(--primary-color); border-color: rgba(67,97,238,0.2); }
+[data-bs-theme="dark"] .field-chip:not(.selected) { background: rgba(67,97,238,0.15); color: var(--primary-light); border-color: rgba(67,97,238,0.3); }
+.field-chip .chip-type { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+.field-chip.selected .chip-type { color: rgba(255,255,255,0.8); }
+.pivot-field {
+padding: 0.625rem 1rem; margin: 0.25rem; background: var(--card-bg-light);
+border: 1px solid var(--border-light); border-radius: var(--radius-md);
+cursor: grab; font-size: 0.85rem; display: inline-flex; align-items: center;
+gap: 0.5rem; font-weight: 500; transition: all 0.2s; box-shadow: var(--shadow-sm);
+}
+[data-bs-theme="dark"] .pivot-field { background: var(--card-bg-dark); border-color: var(--border-dark); }
+.pivot-field:hover { background: rgba(67,97,238,0.1); border-color: var(--primary-color); transform: translateY(-1px); }
+.pivot-drop-area {
+min-height: 120px; border: 2px dashed #cbd5e1; border-radius: var(--radius-md);
+padding: 1rem; background: rgba(0,0,0,0.02); transition: all 0.3s;
+}
+[data-bs-theme="dark"] .pivot-drop-area { border-color: #475569; background: rgba(255,255,255,0.02); }
+.pivot-drop-area.drag-over { border-color: var(--primary-color); background: rgba(67,97,238,0.08); }
+.badge-type {
+font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;
+padding: 0.25rem 0.5rem; border-radius: 100px; font-weight: 700;
+}
+.badge-type.number { background: rgba(67,97,238,0.15); color: var(--primary-color); }
+.badge-type.text { background: rgba(247,37,133,0.15); color: var(--accent-color); }
+.badge-type.date { background: rgba(76,201,240,0.15); color: #0891b2; }
+[data-bs-theme="dark"] .badge-type.number { background: rgba(67,97,238,0.25); }
+[data-bs-theme="dark"] .badge-type.text { background: rgba(247,37,133,0.25); }
+[data-bs-theme="dark"] .badge-type.date { background: rgba(76,201,240,0.25); }
+.sidebar-toggle {
+display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1050;
+width: 56px; height: 56px; border-radius: 50%; background: var(--gradient-1);
+color: white; border: none; box-shadow: var(--shadow-xl);
+align-items: center; justify-content: center; font-size: 1.5rem;
+}
+@media (max-width: 1199px) { .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+@media (max-width: 991px) {
+.sidebar { transform: translateX(-100%); box-shadow: none; }
+.sidebar.open { transform: translateX(0); box-shadow: var(--shadow-xl); }
+.main-content { margin-left: 0; padding: 1rem; }
+.sidebar-toggle { display: flex; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1035; }
+.sidebar-overlay.show { display: block; }
+}
+@media (max-width: 767px) {
+.kpi-grid { grid-template-columns: 1fr; }
+.content-header h2 { font-size: 1.4rem; }
+.drop-zone { padding: 2rem 1rem; }
+.drop-zone .drop-icon { width: 60px; height: 60px; }
+.drop-zone .drop-icon i { font-size: 1.8rem; }
+}
+@media (max-width: 575px) {
+.main-content { padding: 0.75rem; }
+.card-body-custom { padding: 1rem; }
+.kpi-card { padding: 1rem; }
+.kpi-card .kpi-value { font-size: 1.5rem; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.4s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+.animate-slide-in { animation: slideIn 0.3s ease forwards; }
+.status-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 100px; font-size: 0.85rem; font-weight: 600; }
+.status-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="app.toggleSidebar()"></div>
+<div class="dashboard-container">
+<nav class="sidebar" id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-brand"><i class="bi bi-bar-chart-line-fill"></i><span>SurveyAnalytics</span></div>
+</div>
+<div class="sidebar-body">
+<div class="mb-3">
+<button class="btn btn-outline-light btn-sm w-100" onclick="app.toggleTheme()" style="border-color:rgba(255,255,255,0.3);color:white;"><i class="bi bi-moon-stars"></i> Toggle Theme</button>
+</div>
+<div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+<button class="nav-link active" id="v-pills-upload-tab" data-bs-toggle="pill" data-bs-target="#v-pills-upload" type="button"><i class="bi bi-upload"></i> <span>Upload Data</span></button>
+<button class="nav-link" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button"><i class="bi bi-database"></i> <span>Data Profile</span></button>
+<button class="nav-link" id="v-pills-kpi-tab" data-bs-toggle="pill" data-bs-target="#v-pills-kpi" type="button"><i class="bi bi-speedometer2"></i> <span>KPIs</span></button>
+<button class="nav-link" id="v-pills-charts-tab" data-bs-toggle="pill" data-bs-target="#v-pills-charts" type="button"><i class="bi bi-graph-up"></i> <span>Charts</span></button>
+<button class="nav-link" id="v-pills-survey-tab" data-bs-toggle="pill" data-bs-target="#v-pills-survey" type="button"><i class="bi bi-clipboard-data"></i> <span>Survey Mode</span></button>
+<button class="nav-link" id="v-pills-pivot-tab" data-bs-toggle="pill" data-bs-target="#v-pills-pivot" type="button"><i class="bi bi-table"></i> <span>Pivot Table</span></button>
+<button class="nav-link" id="v-pills-quality-tab" data-bs-toggle="pill" data-bs-target="#v-pills-quality" type="button"><i class="bi bi-shield-check"></i> <span>Data Quality</span></button>
+</div>
+</div>
+<div class="sidebar-footer">
+<div class="small mb-2" style="opacity:0.7;">Data Status</div>
+<div id="dataStatus" class="status-badge bg-secondary bg-opacity-25 text-secondary"><span class="dot"></span> No Data Loaded</div>
+</div>
+</nav>
+<main class="main-content" id="mainContent">
+<div class="tab-content" id="v-pills-tabContent">
+<div class="tab-pane fade show active" id="v-pills-upload">
+<div class="content-header"><h2>Import Data</h2><p>Upload your CSV or Excel file to get started with analytics</p></div>
+<div class="dashboard-card mb-4">
+<div class="card-body-custom">
+<div class="drop-zone" id="dropZone">
+<div class="drop-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+<h5 class="mb-2">Drag & Drop your file here</h5>
+<p class="text-muted mb-3">Supports CSV, XLSX files up to 100MB</p>
+<button class="btn btn-primary"><i class="bi bi-folder-open"></i> Browse Files</button>
+<input type="file" id="fileInput" class="d-none" accept=".csv,.xlsx">
+</div>
+</div>
+</div>
+<div id="previewSection" class="d-none animate-fade-in">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<h4 class="mb-0">Data Preview</h4>
+<span class="badge bg-primary" id="rowCountBadge" style="font-size:0.9rem;padding:0.5rem 1rem;">0 rows</span>
+</div>
+<div class="data-table-wrapper">
+<div class="data-table-container">
+<table class="table table-hover mb-0" id="previewTable"><thead><tr></tr></thead><tbody></tbody></table>
+</div>
+</div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-profile">
+<div class="content-header"><h2>Data Profiler</h2><p>Automatic detection of column types and data statistics</p></div>
+<div class="row g-3" id="profileContainer">
+<div class="col-12 text-center text-muted py-5"><i class="bi bi-cpu fs-1 mb-3 d-block"></i><p>Load data to see profile analysis.</p></div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-kpi">
+<div class="content-header">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+<div><h2 class="mb-0">Key Performance Indicators</h2><p class="mb-0">Select multiple fields to analyze</p></div>
+<div class="d-flex gap-2">
+<button class="btn btn-outline-secondary" onclick="app.kpiEngine.selectAll()"><i class="bi bi-check-all"></i> Select All</button>
+<button class="btn btn-outline-secondary" onclick="app.kpiEngine.clearAll()"><i class="bi bi-x-lg"></i> Clear</button>
+</div>
+</div>
+</div>
+<div class="dashboard-card mb-4">
+<div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Select Fields</h6><span class="badge bg-primary" id="selectedFieldsCount">0 selected</span></div>
+<div class="card-body-custom"><div class="field-selector" id="kpiFieldSelector"></div></div>
+</div>
+<div class="kpi-grid" id="kpiContainer">
+<div class="col-12 text-center text-muted py-5"><i class="bi bi-hand-index-thumb fs-1 mb-3 d-block"></i><p>Select fields above to see KPIs</p></div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-charts">
+<div class="content-header"><h2>Interactive Chart Builder</h2><p>Auto-recommended visualizations based on field types</p></div>
+<div class="dashboard-card mb-4">
+<div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-sliders me-2"></i>Chart Configuration</h6><span class="badge bg-info" id="chartRecommendation">Select fields</span></div>
+<div class="card-body-custom">
+<div class="row g-3">
+<div class="col-12 col-md-6 col-lg-3"><label class="form-label fw-semibold">X-Axis (Category/Date)</label><select class="form-select" id="chartX"><option value="">Select field...</option></select></div>
+<div class="col-12 col-md-6 col-lg-3"><label class="form-label fw-semibold">Y-Axis (Value)</label><select class="form-select" id="chartY"><option value="count">Count (No Field)</option></select></div>
+<div class="col-12 col-md-6 col-lg-3"><label class="form-label fw-semibold">Aggregation</label><select class="form-select" id="chartAgg"><option value="count">Count</option><option value="sum">Sum</option><option value="avg">Average</option><option value="min">Min</option><option value="max">Max</option><option value="median">Median</option></select></div>
+<div class="col-12 col-md-6 col-lg-3"><label class="form-label fw-semibold">Chart Type</label><select class="form-select" id="chartType"></select></div>
+</div>
+<div class="mt-4 d-flex flex-wrap gap-2">
+<button class="btn btn-primary" onclick="app.chartEngine.render()"><i class="bi bi-play-fill"></i> Generate Chart</button>
+<button class="btn btn-outline-secondary" onclick="app.exportManager.exportChart()"><i class="bi bi-download"></i> Save PNG</button>
+<button class="btn btn-outline-secondary" onclick="app.exportManager.exportChartPDF()"><i class="bi bi-file-pdf"></i> Save PDF</button>
+</div>
+</div>
+</div>
+<div class="dashboard-card">
+<div class="card-body-custom">
+<div class="chart-container" style="position:relative;height:400px;width:100%;"><canvas id="mainChart"></canvas></div>
+</div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-survey">
+<div class="content-header"><h2>Survey Analytics</h2><p>Specialized analysis for Likert scales and Yes/No questions</p></div>
+<div class="row g-4">
+<div class="col-12 col-lg-4">
+<div class="dashboard-card h-100">
+<div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-star-fill me-2 text-warning"></i>Likert Scale</h6></div>
+<div class="card-body-custom">
+<select class="form-select mb-3" id="likertSelect"></select>
+<button class="btn btn-primary w-100" onclick="app.surveyAnalyzer.analyzeLikert()"><i class="bi bi-lightning-fill"></i> Analyze Likert</button>
+<div id="likertResults" class="mt-4"></div>
+</div>
+</div>
+</div>
+<div class="col-12 col-lg-8">
+<div class="dashboard-card h-100">
+<div class="card-body-custom">
+<div style="position:relative;height:350px;"><canvas id="likertChart"></canvas></div>
+</div>
+</div>
+</div>
+<div class="col-12 col-lg-4">
+<div class="dashboard-card h-100">
+<div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-check-circle-fill me-2 text-success"></i>Yes/No Questions</h6></div>
+<div class="card-body-custom">
+<select class="form-select mb-3" id="yesNoSelect"></select>
+<button class="btn btn-primary w-100" onclick="app.surveyAnalyzer.analyzeYesNo()"><i class="bi bi-lightning-fill"></i> Analyze Yes/No</button>
+<div id="yesNoResults" class="mt-4"></div>
+</div>
+</div>
+</div>
+<div class="col-12 col-lg-8">
+<div class="dashboard-card h-100">
+<div class="card-body-custom">
+<div style="position:relative;height:350px;"><canvas id="yesNoChart"></canvas></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-pivot">
+<div class="content-header"><h2>Pivot Table</h2><p>Drag and drop fields to create custom cross-tabulations</p></div>
+<div class="dashboard-card">
+<div class="card-body-custom">
+<div class="mb-4">
+<h6 class="fw-semibold mb-2"><i class="bi bi-grid-3x3-gap me-2"></i>Available Fields</h6>
+<div id="pivotFields" class="d-flex flex-wrap p-2 rounded" style="background:rgba(0,0,0,0.02);min-height:60px;"></div>
+</div>
+<div class="row g-3">
+<div class="col-12 col-sm-6 col-lg-3">
+<h6 class="fw-semibold mb-2"><i class="bi bi-layout-text-sidebar me-1"></i>Rows</h6>
+<div class="pivot-drop-area" id="pivotRows" ondrop="app.pivotEngine.drop(event,'rows')" ondragover="app.pivotEngine.allowDrop(event)"></div>
+</div>
+<div class="col-12 col-sm-6 col-lg-3">
+<h6 class="fw-semibold mb-2"><i class="bi bi-layout-three-columns me-1"></i>Columns</h6>
+<div class="pivot-drop-area" id="pivotCols" ondrop="app.pivotEngine.drop(event,'cols')" ondragover="app.pivotEngine.allowDrop(event)"></div>
+</div>
+<div class="col-12 col-sm-6 col-lg-3">
+<h6 class="fw-semibold mb-2 d-flex align-items-center gap-2"><i class="bi bi-calculator"></i>Values
+<select class="form-select form-select-sm" id="pivotAgg" style="width:auto;font-size:0.75rem;"><option>Sum</option><option>Avg</option><option>Count</option><option>Min</option><option>Max</option><option>Median</option></select>
+</h6>
+<div class="pivot-drop-area" id="pivotVals" ondrop="app.pivotEngine.drop(event,'vals')" ondragover="app.pivotEngine.allowDrop(event)"></div>
+</div>
+<div class="col-12 col-sm-6 col-lg-3">
+<h6 class="fw-semibold mb-2"><i class="bi bi-funnel me-1"></i>Filters</h6>
+<div class="pivot-drop-area" id="pivotFilters" ondrop="app.pivotEngine.drop(event,'filters')" ondragover="app.pivotEngine.allowDrop(event)"></div>
+</div>
+</div>
+<div class="mt-4 d-flex flex-wrap gap-2">
+<button class="btn btn-primary" onclick="app.pivotEngine.generate()"><i class="bi bi-play"></i> Generate Pivot</button>
+<button class="btn btn-outline-success" onclick="app.pivotEngine.exportExcel()"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+<button class="btn btn-outline-secondary" onclick="app.pivotEngine.exportCSV()"><i class="bi bi-filetype-csv"></i> Export CSV</button>
+</div>
+<div class="mt-4 table-responsive" id="pivotResult"></div>
+</div>
+</div>
+</div>
+<div class="tab-pane fade" id="v-pills-quality">
+<div class="content-header"><h2>Data Quality Report</h2><p>Comprehensive analysis of data integrity and completeness</p></div>
+<div class="row g-3" id="qualityContainer">
+<div class="col-12 text-center text-muted py-5"><i class="bi bi-shield-exclamation fs-1 mb-3 d-block"></i><p>Load data to analyze quality metrics.</p></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<button class="sidebar-toggle" id="sidebarToggle" onclick="app.toggleSidebar()"><i class="bi bi-list"></i></button>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+const app = {
+data: [], headers: [], types: {}, charts: {}, selectedKPIFields: new Set(),
+chartColors: ['#4361ee','#f72585','#4cc9f0','#f9c74f','#7209b7','#3a0ca3','#4895ef','#560bad','#b5179e','#480ca8','#3f37c9','#4ad66d','#f15bb5','#00bbf9','#9b5de5','#00f5d4','#fee440','#f8961e','#577590','#f3722c'],
+init() {
+this.fileLoader.init();
+this.theme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-bs-theme', this.theme);
+window.addEventListener('resize', () => {
+if (window.innerWidth > 991) {
+document.getElementById('sidebar').classList.remove('open');
+document.getElementById('sidebarOverlay').classList.remove('show');
+}
+});
+},
+toggleSidebar() {
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+sidebar.classList.toggle('open');
+overlay.classList.toggle('show');
+},
+toggleTheme() {
+this.theme = this.theme === 'light' ? 'dark' : 'light';
+document.documentElement.setAttribute('data-bs-theme', this.theme);
+localStorage.setItem('theme', this.theme);
+Object.values(this.charts).forEach(chart => { if (chart) chart.update(); });
+if (this.chartEngine.chartInstance) this.chartEngine.chartInstance.update();
+},
+getCol(field) { return this.data.map(row => row[field]); },
+parseVal(val, type) {
+if (val === null || val === undefined || val === '') return null;
+if (type === 'number') return parseFloat(val);
+if (type === 'date') return new Date(val);
+return String(val);
+},
+formatNumber(num) {
+if (num === null || num === undefined || isNaN(num)) return '—';
+if (Math.abs(num) >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+return Number(num).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+};
+
+app.fileLoader = {
+init() {
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('click', (e) => { if (e.target !== fileInput) fileInput.click(); });
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+e.preventDefault(); dropZone.classList.remove('dragover');
+if (e.dataTransfer.files.length) this.handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => { if (e.target.files.length) this.handleFile(e.target.files[0]); });
+},
+handleFile(file) {
+if (!file) return;
+const ext = file.name.split('.').pop().toLowerCase();
+const status = document.getElementById('dataStatus');
+status.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Loading...';
+status.className = 'status-badge bg-warning bg-opacity-25 text-warning';
+if (ext === 'csv') {
+Papa.parse(file, {
+header: true, dynamicTyping: true, skipEmptyLines: true,
+complete: (results) => this.processData(results.data),
+error: (err) => { alert('Error parsing CSV: ' + err.message); this.resetStatus(); }
+});
+} else if (ext === 'xlsx') {
+const reader = new FileReader();
+reader.onload = (e) => {
+try {
+const data = new Uint8Array(e.target.result);
+const workbook = XLSX.read(data, {type: 'array'});
+const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+if (jsonData.length < 2) { alert('File appears empty.'); this.resetStatus(); return; }
+const headers = jsonData[0].map(h => String(h || '').trim());
+const rows = jsonData.slice(1).map(row => {
+let obj = {};
+headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+return obj;
+});
+this.processData(rows);
+} catch (err) { alert('Error parsing XLSX: ' + err.message); this.resetStatus(); }
+};
+reader.onerror = () => { alert('Error reading file.'); this.resetStatus(); };
+reader.readAsArrayBuffer(file);
+} else { alert('Unsupported format. Use CSV or XLSX.'); this.resetStatus(); }
+},
+resetStatus() {
+const status = document.getElementById('dataStatus');
+status.innerHTML = '<span class="dot"></span> No Data Loaded';
+status.className = 'status-badge bg-secondary bg-opacity-25 text-secondary';
+},
+processData(data) {
+if (!data || data.length === 0) { this.resetStatus(); return; }
+app.data = data;
+app.headers = Object.keys(data[0]);
+app.types = app.dataProfiler.detectTypes(data);
+const status = document.getElementById('dataStatus');
+status.innerHTML = '<span class="dot" style="background:#4ad66d;"></span> ' + data.length.toLocaleString() + ' Rows Loaded';
+status.className = 'status-badge bg-success bg-opacity-25 text-success';
+document.getElementById('previewSection').classList.remove('d-none');
+document.getElementById('rowCountBadge').innerText = data.length.toLocaleString() + ' rows';
+this.renderPreview(data);
+app.dataProfiler.renderProfile();
+app.kpiEngine.init();
+app.chartEngine.init();
+app.surveyAnalyzer.init();
+app.pivotEngine.init();
+app.dataQuality.analyze();
+},
+renderPreview(data) {
+const thead = document.querySelector('#previewTable thead tr');
+const tbody = document.querySelector('#previewTable tbody');
+thead.innerHTML = ''; tbody.innerHTML = '';
+app.headers.forEach(h => {
+const th = document.createElement('th');
+th.innerHTML = '<div class="d-flex align-items-center gap-2"><span>' + h + '</span><span class="badge-type ' + app.types[h] + '">' + app.types[h] + '</span></div>';
+thead.appendChild(th);
+});
+data.slice(0, 100).forEach(row => {
+const tr = document.createElement('tr');
+app.headers.forEach(h => {
+const td = document.createElement('td');
+const val = row[h];
+td.innerText = val !== undefined && val !== null ? String(val) : '';
+td.title = td.innerText;
+tr.appendChild(td);
+});
+tbody.appendChild(tr);
+});
+}
+};
+
+app.dataProfiler = {
+detectTypes(data) {
+const types = {};
+const sample = data.slice(0, 200);
+app.headers.forEach(header => {
+let isNumber = true, isDate = true, nonEmptyCount = 0;
+sample.forEach(row => {
+const val = row[header];
+if (val === null || val === undefined || val === '') return;
+nonEmptyCount++;
+const strVal = String(val).trim();
+if (!strVal) return;
+if (isNumber && isNaN(parseFloat(strVal))) isNumber = false;
+if (isDate && isNaN(Date.parse(strVal))) isDate = false;
+});
+if (nonEmptyCount === 0) types[header] = 'text';
+else if (isNumber) types[header] = 'number';
+else if (isDate) types[header] = 'date';
+else types[header] = 'text';
+});
+return types;
+},
+renderProfile() {
+const container = document.getElementById('profileContainer');
+container.innerHTML = '';
+app.headers.forEach((header, idx) => {
+const type = app.types[header];
+const values = app.data.map(r => r[header]).filter(v => v !== '' && v !== null && v !== undefined);
+const unique = new Set(values).size;
+const missing = app.data.length - values.length;
+const missingPct = ((missing / app.data.length) * 100).toFixed(1);
+const col = document.createElement('div');
+col.className = 'col-12 col-md-6 col-lg-4 animate-fade-in';
+col.style.animationDelay = (idx * 0.05) + 's';
+let extraInfo = '';
+if (type === 'number' && values.length > 0) {
+const nums = values.map(v => parseFloat(v)).filter(n => !isNaN(n));
+if (nums.length) {
+const min = Math.min(...nums), max = Math.max(...nums), avg = nums.reduce((a,b) => a+b, 0) / nums.length;
+extraInfo = '<div class="row text-center mt-3 pt-3" style="border-top:1px solid var(--bs-border-color);">' +
+'<div class="col-4"><div class="fw-bold">' + app.formatNumber(min) + '</div><small class="text-muted">Min</small></div>' +
+'<div class="col-4"><div class="fw-bold">' + app.formatNumber(avg) + '</div><small class="text-muted">Avg</small></div>' +
+'<div class="col-4"><div class="fw-bold">' + app.formatNumber(max) + '</div><small class="text-muted">Max</small></div></div>';
+}
+}
+const iconBg = type === 'number' ? 'rgba(67,97,238,0.1)' : type === 'date' ? 'rgba(76,201,240,0.1)' : 'rgba(247,37,133,0.1)';
+const iconColor = type === 'number' ? '#4361ee' : type === 'date' ? '#0891b2' : '#f72585';
+const iconName = type === 'number' ? '123' : type === 'date' ? 'calendar' : 'text-left';
+col.innerHTML = '<div class="dashboard-card h-100"><div class="card-body-custom">' +
+'<div class="d-flex justify-content-between align-items-start mb-3">' +
+'<div><h6 class="mb-1 fw-bold" style="word-break:break-word;">' + header + '</h6><span class="badge-type ' + type + '">' + type + '</span></div>' +
+'<div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:' + iconBg + ';">' +
+'<i class="bi bi-' + iconName + '" style="color:' + iconColor + ';"></i></div></div>' +
+'<div class="row text-center"><div class="col-4"><div class="fw-bold fs-5">' + unique.toLocaleString() + '</div><small class="text-muted">Unique</small></div>' +
+'<div class="col-4"><div class="fw-bold fs-5 ' + (missing > 0 ? 'text-warning' : '') + '">' + missing.toLocaleString() + '</div><small class="text-muted">Missing (' + missingPct + '%)</small></div>' +
+'<div class="col-4"><div class="fw-bold fs-5">' + app.data.length.toLocaleString() + '</div><small class="text-muted">Total</small></div></div>' +
+extraInfo + '</div></div>';
+container.appendChild(col);
+});
+}
+};
+
+app.kpiEngine = {
+init() {
+const selector = document.getElementById('kpiFieldSelector');
+selector.innerHTML = '';
+app.selectedKPIFields.clear();
+app.headers.forEach(h => {
+const chip = document.createElement('div');
+chip.className = 'field-chip';
+chip.dataset.field = h;
+chip.innerHTML = '<span>' + h + '</span><span class="chip-type">' + app.types[h] + '</span>';
+chip.onclick = () => this.toggleField(h, chip);
+selector.appendChild(chip);
+});
+this.updateCount();
+this.calculate();
+},
+toggleField(field, chip) {
+if (app.selectedKPIFields.has(field)) {
+app.selectedKPIFields.delete(field);
+chip.classList.remove('selected');
+} else {
+app.selectedKPIFields.add(field);
+chip.classList.add('selected');
+}
+this.updateCount();
+this.calculate();
+},
+selectAll() {
+app.headers.forEach(h => app.selectedKPIFields.add(h));
+document.querySelectorAll('.field-chip').forEach(c => c.classList.add('selected'));
+this.updateCount();
+this.calculate();
+},
+clearAll() {
+app.selectedKPIFields.clear();
+document.querySelectorAll('.field-chip').forEach(c => c.classList.remove('selected'));
+this.updateCount();
+this.calculate();
+},
+updateCount() {
+document.getElementById('selectedFieldsCount').innerText = app.selectedKPIFields.size + ' selected';
+},
+calculate() {
+const container = document.getElementById('kpiContainer');
+container.innerHTML = '';
+if (app.selectedKPIFields.size === 0) {
+container.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-hand-index-thumb fs-1 mb-3 d-block"></i><p>Select fields above to see KPIs</p></div>';
+return;
+}
+const iconClasses = ['blue','pink','cyan','orange','purple','green'];
+const kpiIcons = {
+'Total Records':'bi-files','Unique Values':'bi-fingerprint','Sum':'bi-plus-circle','Average':'bi-calculator',
+'Median':'bi-bar-chart-steps','Minimum':'bi-arrow-down-circle','Maximum':'bi-arrow-up-circle',
+'Std Dev':'bi-graph-down','Missing':'bi-exclamation-triangle','Top Category':'bi-trophy'
+};
+let cardIndex = 0;
+app.selectedKPIFields.forEach(field => {
+const values = app.data.map(r => r[field]).filter(v => v !== '' && v !== null && v !== undefined);
+const isNum = app.types[field] === 'number';
+const iconClass = iconClasses[cardIndex % iconClasses.length];
+const createCard = (label, value, iconKey) => {
+const icon = kpiIcons[iconKey] || 'bi-bar-chart';
+const div = document.createElement('div');
+div.className = 'animate-fade-in';
+div.style.animationDelay = (cardIndex * 0.05) + 's';
+div.innerHTML = '<div class="kpi-card"><div class="kpi-icon ' + iconClass + '"><i class="bi ' + icon + '"></i></div>' +
+'<div class="kpi-field-name">' + field + '</div><div class="kpi-value">' + value + '</div><div class="kpi-label">' + label + '</div></div>';
+container.appendChild(div);
+cardIndex++;
+};
+createCard('Total Records', app.formatNumber(app.data.length), 'Total Records');
+createCard('Unique Values', app.formatNumber(new Set(values).size), 'Unique Values');
+if (isNum) {
+const nums = values.map(v => parseFloat(v)).filter(n => !isNaN(n)).sort((a,b) => a-b);
+if (nums.length > 0) {
+const sum = nums.reduce((a,b) => a+b, 0);
+const avg = sum / nums.length;
+const min = nums[0], max = nums[nums.length-1];
+const mid = Math.floor(nums.length / 2);
+const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+const squareDiffs = nums.map(v => Math.pow(v - avg, 2));
+const stdDev = Math.sqrt(squareDiffs.reduce((a,b) => a+b, 0) / squareDiffs.length);
+createCard('Sum', app.formatNumber(sum), 'Sum');
+createCard('Average', app.formatNumber(avg), 'Average');
+createCard('Median', app.formatNumber(median), 'Median');
+createCard('Minimum', app.formatNumber(min), 'Minimum');
+createCard('Maximum', app.formatNumber(max), 'Maximum');
+createCard('Std Deviation', app.formatNumber(stdDev), 'Std Dev');
+}
+} else {
+const freq = {};
+values.forEach(v => freq[v] = (freq[v] || 0) + 1);
+const topCat = Object.keys(freq).reduce((a,b) => freq[a] > freq[b] ? a : b, '');
+createCard('Top Category', topCat || '—', 'Top Category');
+}
+const missing = app.data.length - values.length;
+if (missing > 0) createCard('Missing Values', app.formatNumber(missing), 'Missing');
+});
+}
+};
+
+app.chartEngine = {
+chartInstance: null,
+init() {
+const xSelect = document.getElementById('chartX');
+const ySelect = document.getElementById('chartY');
+xSelect.innerHTML = '<option value="">Select field...</option>';
+ySelect.innerHTML = '<option value="count">Count (No Field)</option>';
+app.headers.forEach(h => {
+xSelect.innerHTML += '<option value="' + h + '">' + h + '</option>';
+if (app.types[h] === 'number') ySelect.innerHTML += '<option value="' + h + '">' + h + '</option>';
+});
+xSelect.addEventListener('change', () => this.recommend());
+ySelect.addEventListener('change', () => this.recommend());
+},
+recommend() {
+const x = document.getElementById('chartX').value;
+const y = document.getElementById('chartY').value;
+const typeSelect = document.getElementById('chartType');
+const recBadge = document.getElementById('chartRecommendation');
+if (!x) { recBadge.innerText = 'Select fields'; recBadge.className = 'badge bg-secondary'; return; }
+const xType = app.types[x];
+const yType = y === 'count' ? 'count' : app.types[y];
+let options = [], recText = '';
+if (xType === 'text' && yType === 'number') { options = ['bar','horizontalBar','pie','doughnut']; recText = 'Categorical + Numeric'; }
+else if (xType === 'text' && yType === 'count') { options = ['bar','pie','doughnut']; recText = 'Categorical Distribution'; }
+else if (xType === 'number' && yType === 'number') { options = ['scatter','bubble']; recText = 'Numeric Correlation'; }
+else if (xType === 'date' && yType === 'number') { options = ['line','area','bar']; recText = 'Time Series'; }
+else { options = ['bar']; recText = 'Bar Chart'; }
+typeSelect.innerHTML = options.map(o => '<option value="' + o + '">' + o.charAt(0).toUpperCase() + o.slice(1) + '</option>').join('');
+recBadge.innerText = recText;
+recBadge.className = 'badge bg-info';
+},
+render() {
+const xField = document.getElementById('chartX').value;
+const yField = document.getElementById('chartY').value;
+const agg = document.getElementById('chartAgg').value;
+const type = document.getElementById('chartType').value;
+const ctx = document.getElementById('mainChart').getContext('2d');
+if (!xField) return;
+const labels = [], dataPoints = [], groups = {};
+app.data.forEach(row => {
+const key = row[xField];
+if (key === undefined || key === null) return;
+let val = 0;
+if (yField === 'count') val = 1;
+else { const raw = parseFloat(row[yField]); if (!isNaN(raw)) val = raw; }
+if (!groups[key]) groups[key] = [];
+groups[key].push(val);
+});
+Object.keys(groups).forEach(key => {
+const arr = groups[key];
+let res = 0;
+if (agg === 'sum') res = arr.reduce((a,b) => a+b, 0);
+else if (agg === 'avg') res = arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
+else if (agg === 'min') res = Math.min(...arr);
+else if (agg === 'max') res = Math.max(...arr);
+else if (agg === 'median') {
+const s = [...arr].sort((a,b) => a-b);
+res = s.length % 2 !== 0 ? s[Math.floor(s.length/2)] : (s[s.length/2 - 1] + s[s.length/2]) / 2;
+} else res = arr.length;
+labels.push(key);
+dataPoints.push(res);
+});
+let displayLabels = labels, displayData = dataPoints;
+if ((type === 'pie' || type === 'doughnut') && labels.length > 10) {
+const combined = labels.map((l, i) => ({l, v: dataPoints[i]}));
+combined.sort((a,b) => b.v - a.v);
+displayLabels = combined.slice(0, 10).map(c => c.l);
+displayData = combined.slice(0, 10).map(c => c.v);
+}
+if (this.chartInstance) this.chartInstance.destroy();
+const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+const textColor = isDark ? '#e2e8f0' : '#334155';
+const bgColors = displayLabels.map((_, i) => app.chartColors[i % app.chartColors.length]);
+const borderColors = displayLabels.map((_, i) => app.chartColors[i % app.chartColors.length]);
+const config = {
+type: type === 'horizontalBar' ? 'bar' : type === 'area' ? 'line' : type,
+data: {
+labels: displayLabels,
+datasets: [{
+label: agg + ' of ' + (yField === 'count' ? 'Count' : yField),
+data: displayData,
+backgroundColor: type === 'line' || type === 'area' ? 'rgba(67,97,238,0.2)' : bgColors.map(c => c + 'cc'),
+borderColor: type === 'line' || type === 'area' ? '#4361ee' : borderColors,
+borderWidth: type === 'line' || type === 'area' ? 3 : 1,
+fill: type === 'area',
+tension: type === 'line' || type === 'area' ? 0.4 : 0,
+pointBackgroundColor: type === 'line' || type === 'area' ? '#4361ee' : bgColors,
+pointBorderColor: '#fff',
+pointBorderWidth: 2,
+pointRadius: type === 'scatter' ? 6 : 4,
+pointHoverRadius: type === 'scatter' ? 8 : 6,
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+indexAxis: type === 'horizontalBar' ? 'y' : 'x',
+plugins: {
+legend: {
+display: true,
+labels: { color: textColor, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 16 }
+},
+title: { display: false },
+tooltip: {
+backgroundColor: isDark ? '#1e293b' : '#fff',
+titleColor: isDark ? '#e2e8f0' : '#334155',
+bodyColor: isDark ? '#e2e8f0' : '#334155',
+borderColor: isDark ? '#334155' : '#e2e8f0',
+borderWidth: 1,
+cornerRadius: 12,
+padding: 12,
+boxPadding: 6,
+usePointStyle: true,
+}
+},
+scales: type === 'pie' || type === 'doughnut' ? {} : {
+x: {
+grid: { color: gridColor, drawBorder: false },
+ticks: { color: textColor, font: { size: 11 }, maxRotation: 45 },
+border: { display: false }
+},
+y: {
+grid: { color: gridColor, drawBorder: false },
+ticks: { color: textColor, font: { size: 11 } },
+border: { display: false }
+}
+},
+animation: { duration: 800, easing: 'easeOutQuart' }
+}
+};
+this.chartInstance = new Chart(ctx, config);
+}
+};
+
+app.surveyAnalyzer = {
+init() {
+const likert = document.getElementById('likertSelect');
+const yesNo = document.getElementById('yesNoSelect');
+likert.innerHTML = '<option value="">Select a field...</option>';
+yesNo.innerHTML = '<option value="">Select a field...</option>';
+app.headers.forEach(h => {
+if (app.types[h] === 'text') {
+likert.innerHTML += '<option value="' + h + '">' + h + '</option>';
+yesNo.innerHTML += '<option value="' + h + '">' + h + '</option>';
+}
+});
+},
+analyzeLikert() {
+const field = document.getElementById('likertSelect').value;
+if (!field) return;
+const counts = {'Strongly Agree':0,'Agree':0,'Neutral':0,'Disagree':0,'Strongly Disagree':0};
+let total = 0;
+app.data.forEach(row => {
+const val = String(row[field]).trim();
+if (counts[val] !== undefined) { counts[val]++; total++; }
+});
+const results = document.getElementById('likertResults');
+results.innerHTML = '';
+const likertColors = {'Strongly Agree':'#4ad66d','Agree':'#80ed99','Neutral':'#f9c74f','Disagree':'#f8961e','Strongly Disagree':'#f72585'};
+Object.keys(counts).forEach(k => {
+const pct = total > 0 ? ((counts[k]/total)*100).toFixed(1) : 0;
+results.innerHTML += '<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background:' + likertColors[k] + '15;">' +
+'<span class="fw-medium">' + k + '</span><span class="fw-bold" style="color:' + likertColors[k] + ';">' + counts[k] + ' (' + pct + '%)</span></div>';
+});
+const ctx = document.getElementById('likertChart').getContext('2d');
+if (app.charts.likert) app.charts.likert.destroy();
+const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+app.charts.likert = new Chart(ctx, {
+type: 'bar',
+data: {
+labels: Object.keys(counts),
+datasets: [{
+label: 'Responses',
+data: Object.values(counts),
+backgroundColor: Object.keys(counts).map(k => likertColors[k]),
+borderRadius: 8,
+borderSkipped: false,
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+legend: { display: false },
+title: { display: true, text: 'Likert Distribution', color: isDark ? '#e2e8f0' : '#334155', font: { size: 14, weight: 'bold' } }
+},
+scales: {
+x: { grid: { display: false }, ticks: { color: isDark ? '#e2e8f0' : '#334155', font: { size: 10 } } },
+y: { grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }, ticks: { color: isDark ? '#e2e8f0' : '#334155' } }
+}
+}
+});
+},
+analyzeYesNo() {
+const field = document.getElementById('yesNoSelect').value;
+if (!field) return;
+const counts = {'Yes':0,'No':0};
+let total = 0;
+app.data.forEach(row => {
+const val = String(row[field]).trim().toLowerCase();
+if (val === 'yes' || val === '1' || val === 'true') { counts['Yes']++; total++; }
+else if (val === 'no' || val === '0' || val === 'false') { counts['No']++; total++; }
+});
+const results = document.getElementById('yesNoResults');
+const yesPct = total > 0 ? ((counts['Yes']/total)*100).toFixed(1) : 0;
+const noPct = total > 0 ? ((counts['No']/total)*100).toFixed(1) : 0;
+results.innerHTML = '<div class="card p-3 mb-2 text-white text-center" style="background:linear-gradient(135deg,#4ad66d,#2d6a4f);border:none;"><div class="fw-bold fs-4">' + counts['Yes'] + '</div><div>Yes (' + yesPct + '%)</div></div>' +
+'<div class="card p-3 text-white text-center" style="background:linear-gradient(135deg,#f72585,#b5179e);border:none;"><div class="fw-bold fs-4">' + counts['No'] + '</div><div>No (' + noPct + '%)</div></div>';
+const ctx = document.getElementById('yesNoChart').getContext('2d');
+if (app.charts.yesNo) app.charts.yesNo.destroy();
+const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+app.charts.yesNo = new Chart(ctx, {
+type: 'doughnut',
+data: {
+labels: ['Yes','No'],
+datasets: [{
+data: [counts['Yes'], counts['No']],
+backgroundColor: ['#4ad66d','#f72585'],
+borderWidth: 0,
+hoverOffset: 8
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+legend: { position: 'bottom', labels: { color: isDark ? '#e2e8f0' : '#334155', padding: 20, usePointStyle: true } }
+},
+cutout: '60%'
+}
+});
+}
+};
+
+app.pivotEngine = {
+state: { rows: [], cols: [], vals: [], filters: [] },
+init() {
+const container = document.getElementById('pivotFields');
+container.innerHTML = '';
+app.headers.forEach(h => {
+const div = document.createElement('div');
+div.className = 'pivot-field';
+div.draggable = true;
+div.innerHTML = '<span>' + h + '</span> <span class="badge-type ' + app.types[h] + '">' + app.types[h] + '</span>';
+div.id = 'field-' + h;
+div.ondragstart = (e) => { e.dataTransfer.setData("text", h); };
+container.appendChild(div);
+});
+},
+allowDrop(ev) { ev.preventDefault(); },
+drop(ev, zone) {
+ev.preventDefault();
+const field = ev.dataTransfer.getData("text");
+if (!field) return;
+if (this.state[zone].includes(field)) return;
+this.state[zone].push(field);
+this.renderZone(zone);
+},
+renderZone(zone) {
+const el = document.getElementById('pivot' + zone.charAt(0).toUpperCase() + zone.slice(1));
+el.innerHTML = '';
+this.state[zone].forEach(field => {
+const div = document.createElement('div');
+div.className = 'pivot-field';
+div.innerHTML = '<span>' + field + '</span> <i class="bi bi-x-circle text-danger" style="cursor:pointer"></i>';
+div.querySelector('i').onclick = () => {
+this.state[zone] = this.state[zone].filter(f => f !== field);
+this.renderZone(zone);
+};
+el.appendChild(div);
+});
+},
+generate() {
+const { rows, cols, vals } = this.state;
+const agg = document.getElementById('pivotAgg').value.toLowerCase();
+const resultDiv = document.getElementById('pivotResult');
+if (vals.length === 0) { resultDiv.innerHTML = '<div class="alert alert-warning">Please drop a field into Values.</div>'; return; }
+const groups = {};
+app.data.forEach(row => {
+const rowKey = rows.map(r => row[r]).join(' | ');
+const colKey = cols.length > 0 ? cols.map(c => row[c]).join(' | ') : 'Total';
+if (!groups[rowKey]) groups[rowKey] = {};
+if (!groups[rowKey][colKey]) groups[rowKey][colKey] = [];
+vals.forEach(v => {
+const num = parseFloat(row[v]);
+if (!isNaN(num)) groups[rowKey][colKey].push(num);
+});
+});
+const colKeys = [...new Set(Object.values(groups).flatMap(g => Object.keys(g)))].sort();
+let html = '<table class="table table-bordered table-striped"><thead><tr><th>Row Labels</th>';
+colKeys.forEach(c => html += '<th>' + c + '</th>');
+html += '<th>Grand Total</th></tr></thead><tbody>';
+let grandTotals = {};
+colKeys.forEach(c => grandTotals[c] = []);
+Object.keys(groups).forEach(rKey => {
+html += '<tr><td class="fw-bold">' + rKey + '</td>';
+let rowTotal = [];
+colKeys.forEach(cKey => {
+const arr = groups[rKey][cKey] || [];
+let val = 0;
+if (agg === 'sum') val = arr.reduce((a,b)=>a+b,0);
+else if (agg === 'avg') val = arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+else if (agg === 'count') val = arr.length;
+else if (agg === 'min') val = Math.min(...arr);
+else if (agg === 'max') val = Math.max(...arr);
+html += '<td>' + val.toFixed(2) + '</td>';
+rowTotal.push(...arr);
+grandTotals[cKey].push(...arr);
+});
+let rTot = 0;
+if (agg === 'sum') rTot = rowTotal.reduce((a,b)=>a+b,0);
+else if (agg === 'avg') rTot = rowTotal.length ? rowTotal.reduce((a,b)=>a+b,0)/rowTotal.length : 0;
+else if (agg === 'count') rTot = rowTotal.length;
+html += '<td class="fw-bold bg-light">' + rTot.toFixed(2) + '</td></tr>';
+});
+html += '<tr class="table-dark"><td class="fw-bold">Grand Total</td>';
+let gTotSum = 0;
+colKeys.forEach(cKey => {
+const arr = grandTotals[cKey];
+let val = 0;
+if (agg === 'sum') val = arr.reduce((a,b)=>a+b,0);
+else if (agg === 'avg') val = arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+else if (agg === 'count') val = arr.length;
+html += '<td class="fw-bold">' + val.toFixed(2) + '</td>';
+gTotSum += val;
+});
+html += '<td class="fw-bold">' + gTotSum.toFixed(2) + '</td></tr></tbody></table>';
+resultDiv.innerHTML = html;
+},
+exportExcel() {
+const table = document.querySelector('#pivotResult table');
+if (!table) return alert('Generate pivot table first');
+const wb = XLSX.utils.table_to_book(table, {sheet: "Pivot"});
+XLSX.writeFile(wb, 'pivot_table.xlsx');
+},
+exportCSV() {
+const table = document.querySelector('#pivotResult table');
+if (!table) return alert('Generate pivot table first');
+const wb = XLSX.utils.table_to_book(table, {sheet: "Pivot"});
+const csv = XLSX.utils.sheet_to_csv(wb.Sheets["Pivot"]);
+const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+saveAs(blob, 'pivot_table.csv');
+}
+};
+
+app.dataQuality = {
+analyze() {
+const container = document.getElementById('qualityContainer');
+container.innerHTML = '';
+const seen = new Set();
+let dupes = 0;
+app.data.forEach(row => {
+const str = JSON.stringify(row);
+if (seen.has(str)) dupes++;
+else seen.add(str);
+});
+let missingTotal = 0;
+const outlierReport = [];
+app.headers.forEach(h => {
+if (app.types[h] === 'number') {
+const nums = app.data.map(r => parseFloat(r[h])).filter(n => !isNaN(n)).sort((a,b) => a-b);
+const q1 = nums[Math.floor(nums.length * 0.25)];
+const q3 = nums[Math.floor(nums.length * 0.75)];
+const iqr = q3 - q1;
+const lower = q1 - 1.5 * iqr;
+const upper = q3 + 1.5 * iqr;
+const outliers = nums.filter(n => n < lower || n > upper);
+if (outliers.length > 0) outlierReport.push(h + ': ' + outliers.length + ' outliers');
+}
+app.data.forEach(r => { if (r[h] === '' || r[h] === null || r[h] === undefined) missingTotal++; });
+});
+const createCard = (title, value, color) => '<div class="col-12 col-sm-6 col-lg-3"><div class="dashboard-card p-3 border-' + color + ' border-top border-4"><h6 class="text-muted">' + title + '</h6><h3 class="mb-0">' + value + '</h3></div></div>';
+container.innerHTML += createCard('Duplicate Rows', dupes.toLocaleString(), 'warning');
+container.innerHTML += createCard('Missing Cells', missingTotal.toLocaleString(), 'danger');
+container.innerHTML += createCard('Columns', app.headers.length, 'primary');
+container.innerHTML += createCard('Outlier Columns', outlierReport.length, 'info');
+if (outlierReport.length > 0) {
+container.innerHTML += '<div class="col-12 mt-3"><div class="dashboard-card p-3"><h6>Outlier Details (IQR Method)</h6><ul class="mb-0">' + outlierReport.map(r => '<li>' + r + '</li>').join('') + '</ul></div></div>';
+}
+}
+};
+
+app.exportManager = {
+exportChart() {
+const canvas = document.getElementById('mainChart');
+canvas.toBlob(blob => { saveAs(blob, 'chart.png'); });
+},
+exportChartPDF() {
+const canvas = document.getElementById('mainChart');
+const imgData = canvas.toDataURL('image/png');
+const pdf = new jspdf.jsPDF('landscape');
+pdf.addImage(imgData, 'PNG', 10, 10, 280, 160);
+pdf.save('chart.pdf');
+}
+};
+
+document.addEventListener('DOMContentLoaded', () => app.init());
+</script>
+</body>
+</html>
